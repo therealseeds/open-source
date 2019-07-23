@@ -1,3 +1,5 @@
+Author: Jeffrey Griffin
+
 Endpoints
 POST /v1/app/<app id>/events
 
