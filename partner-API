@@ -105,8 +105,8 @@ Authors: Jeffrey Griffin <jeff@playseeds.com> with minor edits by Rachel Cook <r
   * path parameters:
     * `app_id:       your app's assigned app id`
     * `purchase_id:  the purchase's assigned id found in receipt`
-    
-    * response status:
+
+  * response status:
     * HTTP 200 -> events were successfully recorded. application/json body: `{`
       * `"status": "ok",`
       * `"receipt": {`
@@ -118,8 +118,8 @@ Authors: Jeffrey Griffin <jeff@playseeds.com> with minor edits by Rachel Cook <r
       * `"reason": "not_found"`
       * `}`
     * HTTP 5xx -> retry ONLY after delay specified by Retry-After response header
-    
-    * `GET /v1/app/<app id>/campaign/<campaign name or id>`
+
+* `GET /v1/app/<app id>/campaign/<campaign name or id>`
   * path parameters:
     * `app id:              your app's assigned app id`
     * `campaign name or id: the interstitial campaign's name or assigned id`
@@ -164,8 +164,8 @@ Authors: Jeffrey Griffin <jeff@playseeds.com> with minor edits by Rachel Cook <r
       * `"status": "error",`
       * `"reason": "no_interstitial"`
       * `}`
-      
-      * `GET /v1/app/<app id>/campaign/<campaign name or id>/interstitial/<interstitial name>/content`
+
+* `GET /v1/app/<app id>/campaign/<campaign name or id>/interstitial/<interstitial name>/content`
   * path parameters:
     * `app id:              your app's assigned app id`
     * `campaign name or id: the interstitial campaign's name or assigned id`
