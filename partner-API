@@ -1,6 +1,6 @@
-Authors: Jeffrey Griffin <jeff@playseeds.com>
+Authors: Jeffrey Griffin <jeff@playseeds.com> with minor edits by Rachel Cook <rachel@seedsgives.com>
 
-# New API
+# Partner API
 ## Endpoints
 
 * `POST /v1/app/<app id>/events`
