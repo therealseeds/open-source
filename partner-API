@@ -1,195 +1,205 @@
-Author: Jeffrey Griffin
+Authors: Jeffrey Griffin <jeff@playseeds.com>
 
-Endpoints
-POST /v1/app/<app id>/events
+# New API
+## Endpoints
 
-path parameters:
-app_id: your app's assigned app id
-Content-Type: multipart/form-data | application/x-www-form-urlencoded | application/json
-for type application/json, request body is interpreted as the "events" parameter, and all other parameters must be specified in the query string.
-query string / request body parameters:
-request_id: generated uuid, unique to every request, up to 36 characters
-used for de-duplicating, so requests can be retried safely on connection failures.
-app_key: your app's assigned app key
-app_version: your client's own version number, up to 36 characters
-device_id: device-unique identifier, up to 36 characters
-events: [{ json-formatted event or array of events
-"key": <event name>, (required)
-Event names:
-message shown - Seeds interstitial was shown to user.
-message clicked - Seeds interstitial was clicked after being shown.
-message dismissed - Seeds interstitial was dismissed after being shown.
-show more clicked - Seeds interstitial "show more" button was clicked after being shown.
-social share clicked - Seeds interstitial social "share" button was clicked after being shown.
-IAP:<in-app purchase product ID> - One non-seeds in-app purchase was made, with arbitrary product ID
-"timestamp": <unix timestamp>, (required)
-sender device's time in seconds since unix epoch, at the time the event occurred.
-"amount": <integer>, (required for IAP events)
-price in units of the smallest denomination of the given currency
-"currency": "<3-letter ISO 4217 currency code>", (required for IAP events)
-"params": { (optional)
-key-value pairs which specify attributes associated with the event.
-message shown/clicked/dismissed | shown more clicked | social share clicked:
-"message": "<interstitial name>" - active_interstitial.name returned from campaign endpoint
-"variant": "<interstitial variant>" - active_interstitial.variant returned from campaign endpoint
-}
-}, ... ]
-response status:
-HTTP 200 -> events were successfully recorded. application/json body:
-{"status": "ok"}
-HTTP 4xx -> DO NOT retry; invalid request. application/json body: {
-"status": "error",
-"reason": "unknown_param" | "missing_param" | "duplicate_param" | "unknown_content_type" | "bad_multipart_headers" | "bad_json" | "too_big"
-}
-HTTP 5xx -> retry ONLY after delay specified by Retry-After response header
-POST /v1/app/<app id>/in-app-purchase
+* `POST /v1/app/<app id>/events`
+  * path parameters:
+    * `app_id:       your app's assigned app id`
+  * `Content-Type`: `multipart/form-data` | `application/x-www-form-urlencoded` | `application/json`
+    - for type application/json, request body is interpreted as the "events" parameter, and all
+      other parameters must be specified in the query string.
+  * query string / request body parameters:
+    * `request_id:   generated uuid, unique to every request, up to 36 characters`
+      - used for de-duplicating, so requests can be retried safely on connection failures.
+    * `app_key:      your app's assigned app key`
+    * `app_version:  your client's own version number, up to 36 characters`
+    * `device_id:    device-unique identifier, up to 36 characters`
+    * `events: [{    json-formatted event or array of events`
+      * `"key": <event name>,` (required)
+        * Event names:
+          - `message shown` - Seeds interstitial was shown to user.
+          - `message clicked` - Seeds interstitial was clicked after being shown.
+          - `message dismissed` - Seeds interstitial was dismissed after being shown.
+          - `show more clicked` - Seeds interstitial "show more" button was clicked after being shown.
+          - `social share clicked` - Seeds interstitial social "share" button was clicked after being shown.
+          - `IAP:<in-app purchase product ID>` - One non-seeds in-app purchase was made, with arbitrary product ID
+      * `"timestamp": <unix timestamp>,` (required)
+        - sender device's time in seconds since unix epoch, at the time the event occurred.
+      * `"amount": <integer>,` (required for IAP events)
+        - price in units of the smallest denomination of the given currency
+      * `"currency": "<3-letter ISO 4217 currency code>",` (required for IAP events)
+      * `"params": {` (optional)
+          - key-value pairs which specify attributes associated with the event.
+          - `message shown/clicked/dismissed` | `shown more clicked` | `social share clicked`:
+            - `"message": "<interstitial name>"` - `active_interstitial.name` returned from campaign endpoint
+            - `"variant": "<interstitial variant>"` - `active_interstitial.variant` returned from campaign endpoint
+        * `}`
+      * `}, ... ]`
+  * response status:
+    * HTTP 200 -> events were successfully recorded. application/json body:
+      * `{"status": "ok"}`
+    * HTTP 4xx -> DO NOT retry; invalid request. application/json body: `{`
+      * `"status": "error",`
+      * `"reason": "unknown_param" | "missing_param" | "duplicate_param" | "unknown_content_type" |
+                   "bad_multipart_headers" | "bad_json" | "too_big"`
+      * `}`
+    * HTTP 5xx -> retry ONLY after delay specified by Retry-After response header
 
-path parameters:
-app_id: your app's assigned app id
-Content-Type: multipart/form-data | application/x-www-form-urlencoded
-query string / request body parameters:
-request_id: generated uuid, unique to every request, up to 36 characters
-used for de-duplicating, so requests can be retried safely on connection failures.
-app_key: your app's assigned app key
-app_version: your client's own version number, up to 36 characters
-device_id: device-unique identifier, up to 36 characters
-product_id: arbitrary product identifier, up to 64 characters
-amount: full product price (before deductions) in decimal ISO 4217 major units of the given currency
-currency: 3-letter ISO 4217 code for the currency
-store_format: "google-play-v3" | "apple" | "amazon-v2" | "none"
-NB: providing no store receipt provides less assurance against duplicate purchases
-store_receipt: in-app purchase receipt data provided by App Store (Google/Apple/Amazon)
-store_signature: in-app purchase receipt signature provided by App Store
-(required only for formats "google-play-v3" and "amazon-v2")
-metadata: (optional) arbitrary value containing any metadata associated with the purchase, up to 1KB (UTF-8)
-response status:
-HTTP 200 -> events were successfully recorded. application/json body: {
-"status": "ok",
-"receipt": {
-"version": 1 (Seeds receipt format version)
-"id": "<assigned in-app-purchase receipt id>",
-"creation_date": <receipt creation timestamp, in seconds since unix epoch>,
-"uid": "<device_id parameter>",
-"product_id": "<product_id parameter>",
-"quantity": <quantity parameter>,
-"amount_micro": <integer price in units of 1/1,000,000 of the ISO4217 major unit for the given currency>,
-"currency": "<currency parameter>",
-"data": {
-"type": "in-app-purchase",
-"app_id": "<app_id parameter>",
-"app_version": "<app_version parameter>",
-"store_receipt": { (missing if store_format is "none")
-"format": "<store_format parameter>"
-"data": "<store_receipt parameter>",
-"signature": "<store_signature parameter>" (missing if store_signature parameter not given)
-}
-}
-"metadata": "<metadata parameter>" (optional)
-}
-}
-HTTP 4xx -> DO NOT retry; invalid request. application/json body: {
-"status": "error",
-"reason": "unknown_param" | "missing_param" | "duplicate_param" | "unknown_content_type" | "bad_multipart_headers" | "bad_json" | "too_big"
-}
-HTTP 401 -> app key incorrect. application/json body: {
-"status": "error",
-"reason": "bad_app_key"
-}
-HTTP 5xx -> retry ONLY after delay specified by Retry-After response header
-GET /v1/app/<app id>/in-app-purchase/<purchase id>
+* `POST /v1/app/<app id>/in-app-purchase`
+  * path parameters:
+    * `app_id:       your app's assigned app id`
+  * `Content-Type`: `multipart/form-data` | `application/x-www-form-urlencoded`
+  * query string / request body parameters:
+    * `request_id:   generated uuid, unique to every request, up to 36 characters`
+      - used for de-duplicating, so requests can be retried safely on connection failures.
+    * `app_key:      your app's assigned app key`
+    * `app_version:  your client's own version number, up to 36 characters`
+    * `device_id:    device-unique identifier, up to 36 characters`
+    * `product_id:   arbitrary product identifier, up to 64 characters`
+    * `amount:       full product price (before deductions) in decimal ISO 4217 major units of the given currency`
+    * `currency:     3-letter ISO 4217 code for the currency`
+    * `store_format:     "google-play-v3" | "apple" | "amazon-v2" | "none"`
+      * NB: providing no store receipt provides less assurance against duplicate purchases
+    * `store_receipt:    in-app purchase receipt data provided by App Store (Google/Apple/Amazon)`
+    * `store_signature:  in-app purchase receipt signature provided by App Store`
+      * (required only for formats "google-play-v3" and "amazon-v2")
+    * `metadata:     (optional) arbitrary value containing any metadata associated with the purchase, up to 1KB (UTF-8)`
+  * response status:
+    * HTTP 200 -> events were successfully recorded. application/json body: `{`
+      * `"status": "ok",`
+      * `"receipt": {`
+        * `"version": 1` (Seeds receipt format version)
+        * `"id": "<assigned in-app-purchase receipt id>",`
+        * `"creation_date": <receipt creation timestamp, in seconds since unix epoch>,`
+        * `"uid": "<device_id parameter>",`
+        * `"product_id": "<product_id parameter>",`
+        * `"quantity": <quantity parameter>,`
+        * `"amount_micro": <integer price in units of 1/1,000,000 of the ISO4217 major unit for the given currency>,`
+        * `"currency": "<currency parameter>",`
+        * `"data": {`
+          * `"type": "in-app-purchase",`
+          * `"app_id": "<app_id parameter>",`
+          * `"app_version": "<app_version parameter>",`
+          * `"store_receipt": {` (missing if store_format is "none")
+            * `"format": "<store_format parameter>"`
+            * `"data": "<store_receipt parameter>",`
+            * `"signature": "<store_signature parameter>"` (missing if store_signature parameter not given)
+            * `}`
+          * `}`
+        * `"metadata": "<metadata parameter>"` (optional)
+        * `}`
+      * `}`
+    * HTTP 4xx -> DO NOT retry; invalid request. application/json body: `{`
+      * `"status": "error",`
+      * `"reason": "unknown_param" | "missing_param" | "duplicate_param" | "unknown_content_type" |
+                   "bad_multipart_headers" | "bad_json" | "too_big"`
+      * `}`
+    * HTTP 401 -> app key incorrect. application/json body: `{`
+      * `"status": "error",`
+      * `"reason": "bad_app_key"`
+      * `}`
+    * HTTP 5xx -> retry ONLY after delay specified by Retry-After response header
 
-path parameters:
-
-app_id: your app's assigned app id
-purchase_id: the purchase's assigned id found in receipt
-response status:
-
-HTTP 200 -> events were successfully recorded. application/json body: {
-"status": "ok",
-"receipt": {
-see above POST in-app-purchase endpoint
-}
-}
-HTTP 404 -> DO NOT retry; purchase not found. application/json body: {
-"status": "error",
-"reason": "not_found"
-}
-HTTP 5xx -> retry ONLY after delay specified by Retry-After response header
-GET /v1/app/<app id>/campaign/<campaign name or id>
-
-path parameters:
-app id: your app's assigned app id
-campaign name or id: the interstitial campaign's name or assigned id
-parameters, in query string:
-app_key: your app's assigned app key
-app_version: your client's own version number, up to 36 characters
-device_id: device-unique identifier, up to 36 characters
-response status:
-HTTP 200 -> campaign found. application/json body: {
-"status": "ok",
-"campaign": {
-"id": "<campaign id>"
-opaque identifier assigned to this campaign
-"active_interstitial": {
-details regarding the interstitial to be shown
-"name": "<interstitial name>",
-name assigned to the interstitial
-"variant": "<interstitial variant>",
-string of one of these formats:
-ab-test-<a/b test name>
-payer-default
-default
-"url": "<interstitial url>"
-full URL to fetch the interstitial from
-}
-}
-}
-HTTP 404 -> app/campaign not found. application/json body: {
-"status": "error",
-"reason": "bad_app" | "bad_campaign"
-}
-HTTP 401 -> app key incorrect. application/json body: {
-"status": "error",
-"reason": "bad_app_key"
-}
-HTTP 400 -> DO NOT retry; invalid request. application/json body: {
-"status": "error",
-"reason": "unknown_param" | "missing_param" | "duplicate_param"
-}
-HTTP 5xx -> retry ONLY after delay specified by Retry-After response header. application/json body: {
-"status": "error",
-"reason": "no_interstitial"
-}
-GET /v1/app/<app id>/campaign/<campaign name or id>/interstitial/<interstitial name>/content
-
-path parameters:
-app id: your app's assigned app id
-campaign name or id: the interstitial campaign's name or assigned id
-interstitial name: per-app-per-campaign-unique name assigned to the interstitial
-parameters, in query string:
-app_key: your app's assigned app key
-price: localized price tag to use in the interstitial content (optional)
-if price is not specified, a placeholder %{LocalizedPrice} will be used instead.
-response status:
-HTTP 200 -> text/html body: interstitial content.
-for interstitials in in-app web views, link navigation to the following links must be intercepted and the corresponding actions implemented:
-seeds-action://message_clicked/close/click (purchase button clicked)
-record a "message clicked" event to /events endpoint and initiate the purchase.
-seeds-action://show_more_clicked/show-more - ("show more information" button clicked)
-record a "show more clicked" event to /events endpoint. more information about Seeds will be shown in-place in the interstitial automatically.
-seeds-action://message_shared/social-share/<share endpoint name> (social "share" button clicked)
-record a "social share clicked" event to /events endpoint and activate the device's generic "share" functionality to allow user to share a link to http://playseeds.com/<share endpoint name> via SMS, on social media, etc.
-about:close (close button clicked)
-record a "message dismissed" event to /events endpoint and close the web view.
-if price parameter is not specified, a placeholder %{LocalizedPrice} will appear in interstitial content. this must be replaced by the actual localized price before showing it in a web view.
-HTTP 401 -> app key incorrect. application/json body: {
-"status": "error",
-"reason": "bad_app_key"
-}
-HTTP 404 -> app/interstitial not found. application/json body: {
-"status": "error",
-"reason": "bad_app" | "bad_campaign"
-}
-HTTP 5xx -> retry ONLY after delay specified by Retry-After response header.
-response headers:
-generally, web-standard response headers dealing with content, caching, etc.
+* `GET /v1/app/<app id>/in-app-purchase/<purchase id>`
+  * path parameters:
+    * `app_id:       your app's assigned app id`
+    * `purchase_id:  the purchase's assigned id found in receipt`
+    
+    * response status:
+    * HTTP 200 -> events were successfully recorded. application/json body: `{`
+      * `"status": "ok",`
+      * `"receipt": {`
+        * see above POST in-app-purchase endpoint
+        * `}`
+      * `}`
+    * HTTP 404 -> DO NOT retry; purchase not found. application/json body: `{`
+      * `"status": "error",`
+      * `"reason": "not_found"`
+      * `}`
+    * HTTP 5xx -> retry ONLY after delay specified by Retry-After response header
+    
+    * `GET /v1/app/<app id>/campaign/<campaign name or id>`
+  * path parameters:
+    * `app id:              your app's assigned app id`
+    * `campaign name or id: the interstitial campaign's name or assigned id`
+  * parameters, in query string:
+    * `app_key:       your app's assigned app key`
+    * `app_version:  your client's own version number, up to 36 characters`
+    * `device_id:     device-unique identifier, up to 36 characters`
+  * response status:
+    * HTTP 200 -> campaign found. application/json body: `{`
+      * `"status": "ok",`
+      * `"campaign": {`
+        * `"id": "<campaign id>"`
+          - opaque identifier assigned to this campaign
+        * `"active_interstitial": {`
+          - details regarding the interstitial to be shown
+          * `"name": "<interstitial name>",`
+            - name assigned to the interstitial
+          * `"variant": "<interstitial variant>",`
+            - string of one of these formats:
+              - ab-test-<a/b test name>
+              - payer-default
+              - default
+          * `"url": "<interstitial url>"`
+            - full URL to fetch the interstitial from
+          * `}`
+        * `}`
+      * `}`
+    * HTTP 404 -> app/campaign not found. application/json body: `{`
+      * `"status": "error",`
+      * `"reason": "bad_app" | "bad_campaign"`
+      * `}`
+    * HTTP 401 -> app key incorrect. application/json body: `{`
+      * `"status": "error",`
+      * `"reason": "bad_app_key"`
+      * `}`
+    * HTTP 400 -> DO NOT retry; invalid request. application/json body: `{`
+      * `"status": "error",`
+      * `"reason": "unknown_param" | "missing_param" | "duplicate_param"`
+      * `}`
+    * HTTP 5xx -> retry ONLY after delay specified by Retry-After response header.
+      application/json body: `{`
+      * `"status": "error",`
+      * `"reason": "no_interstitial"`
+      * `}`
+      
+      * `GET /v1/app/<app id>/campaign/<campaign name or id>/interstitial/<interstitial name>/content`
+  * path parameters:
+    * `app id:              your app's assigned app id`
+    * `campaign name or id: the interstitial campaign's name or assigned id`
+    * `interstitial name:   per-app-per-campaign-unique name assigned to the interstitial`
+  * parameters, in query string:
+    * `app_key:       your app's assigned app key`
+    * `price:         localized price tag to use in the interstitial content` (optional)
+      - if price is not specified, a placeholder `%{LocalizedPrice}` will be used instead.
+  * response status:
+    * HTTP 200 -> text/html body: interstitial content.
+      * for interstitials in in-app web views, link navigation to the following links must be intercepted and
+        the corresponding actions implemented:
+        - `seeds-action://message_clicked/close/click` (purchase button clicked)
+          - record a `"message clicked"` event to `/events` endpoint and initiate the purchase.
+        - `seeds-action://show_more_clicked/show-more` - ("show more information" button clicked)
+          - record a `"show more clicked"` event to `/events` endpoint. more information about Seeds will be shown
+            in-place in the interstitial automatically.
+        - `seeds-action://message_shared/social-share/<share endpoint name>` (social "share" button clicked)
+          - record a `"social share clicked"` event to `/events` endpoint and activate the device's generic "share"
+            functionality to allow user to share a link to `http://playseeds.com/<share endpoint name>` via SMS,
+            on social media, etc.
+        - `about:close` (close button clicked)
+          - record a `"message dismissed"` event to `/events` endpoint and close the web view.
+      * if price parameter is not specified, a placeholder `%{LocalizedPrice}` will appear in interstitial content.
+        this must be replaced by the actual localized price before showing it in a web view.
+    * HTTP 401 -> app key incorrect. application/json body: `{`
+      * `"status": "error",`
+      * `"reason": "bad_app_key"`
+      * `}`
+    * HTTP 404 -> app/interstitial not found. application/json body: `{`
+      * `"status": "error",`
+      * `"reason": "bad_app" | "bad_campaign"`
+      * `}`
+    * HTTP 5xx -> retry ONLY after delay specified by Retry-After response header.
+  * response headers:
+    * generally, web-standard response headers dealing with content, caching, etc.
+    
