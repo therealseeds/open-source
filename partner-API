@@ -2,9 +2,9 @@ Authors: Jeffrey Griffin <jeff@playseeds.com> with superficial content edits by 
 
 # Intro
 
-This WIP document describes the public api used both by the Seeds SDKs and by our web and mobile app partners who either
+This WIP document describes the public API used both by the Seeds SDKs and by our web and mobile app partners who either
 prefer not use the Seeds SDK tools or are unable to do so because their app is built using an OS not presently supported by 
-a Seeds SDK tool. 
+a Seeds SDK tool.  Apps must first enable in-app purchasing in order to use this API.
 
 # Partner API
 ## Endpoints
