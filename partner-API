@@ -63,7 +63,7 @@ a Seeds SDK tool.  Apps must first enable in-app purchasing in order to use this
     * `app_version:  your client's own version number, up to 36 characters`
     * `device_id:    device-unique identifier, up to 36 characters`
     * `product_id:   arbitrary product identifier, up to 64 characters`
-    * `amount:       full product price (before deductions) in decimal ISO 4217 major units of the given currency`
+    * `amount:       full product price plus 2 in decimal ISO 4217 major units of the given currency`
     * `currency:     3-letter ISO 4217 code for the currency`
     * `store_format:     "google-play-v3" | "apple" | "amazon-v2" | "none"`
       * NB: providing no store receipt provides less assurance against duplicate purchases
